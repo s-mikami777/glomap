@@ -1,4 +1,6 @@
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+# Ensure vcpkg gflags exports target as gflags::gflags for glog/Ceres linkage.
+set(GFLAGS_USE_TARGET_NAMESPACE ON)
 
 find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED COMPONENTS SuiteSparse)

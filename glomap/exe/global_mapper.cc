@@ -16,6 +16,7 @@ namespace glomap {
 int RunMapper(int argc, char** argv) {
   std::string database_path;
   std::string output_path;
+  std::string gravity_path;
 
   std::string image_path = "";
   std::string constraint_type = "ONLY_POINTS";
@@ -24,6 +25,10 @@ int RunMapper(int argc, char** argv) {
   OptionManager options;
   options.AddRequiredOption("database_path", &database_path);
   options.AddRequiredOption("output_path", &output_path);
+  options.AddDefaultOption(
+      "gravity_path",
+      &gravity_path,
+      "Optional gravity text file. Format: IMAGE_NAME GX GY GZ");
   options.AddDefaultOption("image_path", &image_path);
   options.AddDefaultOption("constraint_type",
                            &constraint_type,
@@ -72,6 +77,16 @@ int RunMapper(int argc, char** argv) {
 
   auto database = colmap::Database::Open(database_path);
   ConvertDatabaseToGlomap(*database, view_graph, rigs, cameras, frames, images);
+  if (!gravity_path.empty()) {
+    if (!colmap::ExistsFile(gravity_path)) {
+      LOG(ERROR) << "`gravity_path` is not a file: " << gravity_path;
+      return EXIT_FAILURE;
+    }
+    // Enable gravity-aware rotation averaging when external gravity priors
+    // are provided. This is the primary path; post-hoc leveling is optional.
+    options.mapper->opt_ra.use_gravity = true;
+    ReadGravity(gravity_path, images);
+  }
 
   if (view_graph.image_pairs.empty()) {
     LOG(ERROR) << "Can't continue without image pairs";
